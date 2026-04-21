@@ -1,20 +1,30 @@
 'use client';
-import { useRef } from 'react';
+import { useRef, Suspense } from 'react';
 import Hero from '@/components/sections/Hero';
 import VisualChronicle from '@/components/sections/VisualChronicle-dynamic';
 import InteractiveMap from '@/components/sections/InteractiveMap';
 import FlyersSection from '@/components/sections/FlyersSection-dynamic';
 import type { FlyersSectionHandle } from '@/components/sections/FlyersSection-dynamic';
 
-export default function HomePage() {
+function HomeContent() {
   const flyersSectionRef = useRef<FlyersSectionHandle>(null);
 
   return (
-    <main>
+    <>
       <Hero />
       <VisualChronicle />
       <InteractiveMap flyersSectionRef={flyersSectionRef} /> 
       <FlyersSection ref={flyersSectionRef} /> 
-    </main>
+    </>
   );
 }
+
+export default function HomePage() {
+  return (
+    <main>
+      <Suspense fallback={<div className="min-h-screen bg-[#FDFCF9]" />}>
+        <HomeContent />
+      </Suspense>
+    </main>
+  );
+}

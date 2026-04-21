@@ -177,7 +177,13 @@ function ImageCard() {
   const ref = useRef<HTMLDivElement>(null)
   const isInView = useInView(ref, { once: true, margin: '-60px' })
   const [tilt, setTilt] = useState({ x: 0, y: 0 })
-  const isTouchDevice = typeof window !== 'undefined' && window.matchMedia('(hover: none)').matches
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const isTouchDevice = mounted && typeof window !== 'undefined' && window.matchMedia('(hover: none)').matches
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (isTouchDevice) return

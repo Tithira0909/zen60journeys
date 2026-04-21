@@ -19,9 +19,14 @@ function TiltCard({ item, index }: { item: Experience; index: number }) {
   const cardRef = useRef<HTMLDivElement>(null)
   const [tilt, setTilt] = useState({ x: 0, y: 0 })
   const [isHovered, setIsHovered] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const isInView = useInView(cardRef, { once: true, margin: '-60px' })
 
-  const isTouchDevice = typeof window !== 'undefined' && window.matchMedia('(hover: none)').matches
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const isTouchDevice = mounted && typeof window !== 'undefined' && window.matchMedia('(hover: none)').matches
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (isTouchDevice) return

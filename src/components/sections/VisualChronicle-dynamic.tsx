@@ -119,12 +119,14 @@ export default function VisualChronicle() {
   const [cards, setCards]   = useState<ChronicleCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [offset, setOffset] = useState(0);
+  const [mounted, setMounted] = useState(false);
   const trackRef   = useRef<HTMLDivElement>(null);
   const dragStart  = useRef(0);
   const touchStart = useRef(0);
 
   // Fetch cards from API 
   useEffect(() => {
+    setMounted(true);
     fetch('/api/chronicle')
       .then((r) => r.json())
       .then((data) => {
@@ -136,11 +138,14 @@ export default function VisualChronicle() {
 
   const VISIBLE_DESKTOP = 3;
   const VISIBLE_MOBILE  = 1;
+  
+  // Hydration-safe screen checks
+  const isMobile = mounted && typeof window !== 'undefined' && window.innerWidth < 640;
+  const visibleCount = isMobile ? VISIBLE_MOBILE : VISIBLE_DESKTOP;
+
   const maxOffset = Math.max(
     0,
-    cards.length - (typeof window !== 'undefined' && window.innerWidth < 640
-      ? VISIBLE_MOBILE
-      : VISIBLE_DESKTOP)
+    cards.length - visibleCount
   );
 
   const goTo = (n: number) => setOffset(Math.max(0, Math.min(n, maxOffset)));
@@ -159,9 +164,8 @@ export default function VisualChronicle() {
 
   const cardWidth  = trackRef.current?.children[0]?.getBoundingClientRect().width ?? 0;
   const translateX = offset * (cardWidth + 20);
-  const visibleCount = typeof window !== 'undefined' && window.innerWidth < 640
-    ? VISIBLE_MOBILE : VISIBLE_DESKTOP;
-  const progressWidth = cards.length > 0
+  
+  const progressWidth = (mounted && cards.length > 0)
     ? `${((offset + visibleCount) / cards.length) * 100}%`
     : '0%';
 

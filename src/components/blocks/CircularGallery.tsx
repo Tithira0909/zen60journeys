@@ -29,11 +29,13 @@ const CircularGallery = React.forwardRef<HTMLDivElement, CircularGalleryProps>(
     // true = freely auto-rotating, false = snapped/idle
     const autoRotatingRef = useRef(true);
     const [autoRotating, setAutoRotating] = useState(true);
+    const [mounted, setMounted] = useState(false);
 
     const N = items.length;
     const angleStep = 360 / N;
 
     useEffect(() => {
+      setMounted(true);
       autoRotatingRef.current = autoRotating;
     }, [autoRotating]);
 
@@ -154,7 +156,7 @@ const CircularGallery = React.forwardRef<HTMLDivElement, CircularGalleryProps>(
                     top: '50%',
                     marginLeft: 'calc(clamp(120px, 18vw, 240px) / -2)',
                     marginTop: 'calc(clamp(170px, 26vw, 340px) / -2)',
-                    transform: `rotateY(${itemAngle}deg) translateZ(${effectiveRadius}px)`,
+                     transform: `rotateY(${itemAngle}deg) translateZ(${mounted ? effectiveRadius : radius}px)`,
                     opacity,
                     transition: 'opacity 0.3s linear',
                     borderRadius: '4px',
