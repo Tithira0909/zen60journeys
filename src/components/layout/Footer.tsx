@@ -1,8 +1,13 @@
+'use client';
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { usePathname } from 'next/navigation';
 
 const Footer = () => {
+  const pathname = usePathname();
+  if (pathname.startsWith('/admin')) return null;
+
   return (
     <footer className="relative w-full overflow-hidden bg-[#0e1f1c]">
 
@@ -40,7 +45,7 @@ const Footer = () => {
               Slow travel, deep culture, wild nature. We craft journeys that feel like the island itself — unhurried, layered, alive.
             </p>
             <a
-              href="mailto:hello@zen60journeys.lk"
+              href="/contact"
               className="inline-flex items-center gap-2 text-sm font-semibold text-white border border-white/20 px-6 py-3 rounded-full hover:bg-white hover:text-[#0e1f1c] transition-all duration-300"
             >
               Plan Your Journey
@@ -51,7 +56,7 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* ── MAIN LINK GRID ── */}
+        {/* MAIN LINK GRID  */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-10 py-14 border-b border-white/10">
           {/* Destinations */}
           <div>
@@ -102,8 +107,8 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* ── BOTTOM BAR — socials left, legal right ── */}
-        <div className="flex flex-col-reverse md:flex-row justify-between items-center gap-6 py-7">
+        {/* BOTTOM BAR — socials left, legal right */}
+        <div className="flex flex-col-reverse md:flex-row justify-between items-center gap-6 py-7 px-6">
 
           {/* Legal */}
           <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-5 text-[11px] tracking-wide text-white/30 text-center">

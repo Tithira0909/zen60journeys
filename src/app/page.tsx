@@ -1,21 +1,20 @@
-import Navbar from '@/components/layout/Navbar';
+'use client';
+import { useRef } from 'react';
 import Hero from '@/components/sections/Hero';
-import VisualChronicle from '@/components/sections/VisualChronicle';
+import VisualChronicle from '@/components/sections/VisualChronicle-dynamic';
 import InteractiveMap from '@/components/sections/InteractiveMap';
-import UntoldSriLanka from '@/components/sections/UntoldSriLanka';
-import FlyersSection from '@/components/sections/FlyersSection';
-import Footer from '@/components/layout/Footer';
+import FlyersSection from '@/components/sections/FlyersSection-dynamic';
+import type { FlyersSectionHandle } from '@/components/sections/FlyersSection-dynamic';
 
 export default function HomePage() {
+  const flyersSectionRef = useRef<FlyersSectionHandle>(null);
+
   return (
     <main>
-      <Navbar />
       <Hero />
       <VisualChronicle />
-      <InteractiveMap />
-      <UntoldSriLanka />
-      <FlyersSection />
-      <Footer />
+      <InteractiveMap flyersSectionRef={flyersSectionRef} /> 
+      <FlyersSection ref={flyersSectionRef} /> 
     </main>
   );
 }

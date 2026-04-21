@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import ScrollExpandMedia from '@/components/blocks/scroll-expansion-hero';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+
 
 const slides = [
   { src: '/images/sl-1.JPEG', alt: 'Sigiriya Rock Fortress' },
@@ -14,6 +17,29 @@ export default function Hero() {
   const [current, setCurrent] = useState(0);
   const [isScrolling, setIsScrolling] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const sectionId = searchParams.get('scrollTo');
+    if (!sectionId) return;
+
+    window.dispatchEvent(new Event('forceExpandHero'));
+
+    // Poll until the element is in the DOM (handles lazy/deferred renders)
+    let attempts = 0;
+    const interval = setInterval(() => {
+      const el = document.getElementById(sectionId);
+      if (el) {
+        setTimeout(() => {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 50);
+        clearInterval(interval);
+      }
+      if (++attempts > 20) clearInterval(interval); // give up after ~2s
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [searchParams]);
 
   // Pause carousel during scroll / expansion
   useEffect(() => {
@@ -81,18 +107,22 @@ export default function Hero() {
 
             {/* Buttons */}
             <div className="flex gap-2 sm:gap-3">
-              <button className="bg-white text-black px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-medium hover:bg-white/90 transition-colors">
-                Start Planning
-              </button>
-              <button className="border border-white/60 text-white px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-medium hover:bg-white/10 transition-colors">
-                Explore Now
-              </button>
+              <Link href="/contact">
+                <button className="bg-white text-black px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-medium hover:bg-white/90 transition-colors">
+                  Start Planning
+                </button>
+              </Link>
+              <Link href="/tours">
+                <button className="border border-white/60 text-white px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-medium hover:bg-white/10 transition-colors">
+                  Explore Now
+                </button>
+              </Link>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Carousel dots ── */}
+      {/* Carousel dots */}
       <div className="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 z-30 flex gap-2">
         {slides.map((_, i) => (
           <button

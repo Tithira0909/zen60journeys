@@ -124,11 +124,16 @@ const ScrollExpandMedia = ({
       }
     };
 
+    const handleForceExpand = () => {
+      updateProgress(1);
+    };
+
     window.addEventListener('wheel', handleWheel, { passive: false });
     window.addEventListener('scroll', handleScroll);
     window.addEventListener('touchstart', handleTouchStart, { passive: false });
     window.addEventListener('touchmove', handleTouchMove, { passive: false });
     window.addEventListener('touchend', handleTouchEnd);
+    window.addEventListener('forceExpandHero', handleForceExpand);
 
     return () => {
       window.removeEventListener('wheel', handleWheel);
@@ -136,6 +141,7 @@ const ScrollExpandMedia = ({
       window.removeEventListener('touchstart', handleTouchStart);
       window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('touchend', handleTouchEnd);
+      window.removeEventListener('forceExpandHero', handleForceExpand);
     };
   }, []);
 

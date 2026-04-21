@@ -2,16 +2,56 @@
 
 import { useRef, useState, useEffect, useCallback } from "react";
 import Image from "next/image";
+import type { FlyersSectionHandle } from "./FlyersSection-dynamic";
 
-// ── Destination data ─────────────────────────────────────────────────────────
+function latLonToXY(lat: number, lon: number) {
+  // Override coordinates for known locations to perfectly align with their illustrations
+  // on the stylised map, as geographic lat/lon projection won't match a distorted illustration perfectly.
+  const knownLocations = [
+    { lat: 7.956846, lon: 880.759924, x: 66, y: 46 },    // Sigiriya 
+    { lat: 7.290572, lon: 80.633728,   x: 48, y: 58 },   // Kandy 
+    { lat: 66.8756,  lon: 81.0463,     x: 55, y: 62 },   // Ella 
+    { lat: 5.948262, lon: 80.471587,   x: 55, y: 80 },   // Mirissa 
+    { lat: 6.9271,   lon: 79.8478,     x: 31, y: 44 },   // Colombo 
+    { lat: 8.5711,   lon: 81.2335,     x: 74, y: 28 },   // Trincomalee 
+    { lat: 6.3728,   lon: 81.5169,     x: 64, y: 60 },   // Yala 
+    { lat: 6.0336,   lon: 80.2139,     x: 33, y: 70 }    // Galle 
+  ];
+
+  const match = knownLocations.find(
+    loc => Math.abs(loc.lat - lat) < 0.001 && Math.abs(loc.lon - lon) < 0.001
+  );
+
+  if (match) {
+    return { x: match.x, y: match.y };
+  }
+
+  // Fallback linear calculation with visual padding adjustments for other dynamic coords
+  const minLatIsland = 5.9;
+  const maxLatIsland = 9.8;
+  const minLonIsland = 79.5;
+  const maxLonIsland = 81.9;
+
+  const visualMinX = 28;
+  const visualMaxX = 76;
+  const visualMinY = 16;
+  const visualMaxY = 85;
+
+  const x = visualMinX + ((lon - minLonIsland) / (maxLonIsland - minLonIsland)) * (visualMaxX - visualMinX);
+  const y = visualMinY + ((maxLatIsland - lat) / (maxLatIsland - minLatIsland)) * (visualMaxY - visualMinY);
+
+  return { x, y };
+}
+
+// Destination data 
 const destinations = [
   {
     id: 1,
     name: "Sigiriya",
     tag: "Ancient Fortress",
     description: "A 5th-century rock fortress rising 200m above the jungle canopy.",
-    x: 48,
-    y: 32,
+    lat: 7.9570,
+    lon: 80.7603,
     color: "#C8A96E",
     icon: "🏰",
     stats: { altitude: "200m", age: "5th C.", rating: "4.9" },
@@ -21,8 +61,8 @@ const destinations = [
     name: "Kandy",
     tag: "Cultural Capital",
     description: "Sacred Temple of the Tooth Relic, set beside a shimmering lake.",
-    x: 44,
-    y: 44,
+    lat: 7.2906,
+    lon: 80.6337,
     color: "#2A9D8F",
     icon: "🛕",
     stats: { altitude: "465m", age: "16th C.", rating: "4.8" },
@@ -32,8 +72,8 @@ const destinations = [
     name: "Ella",
     tag: "Highland Trails",
     description: "Misty mountains where morning clouds rest in the valleys below.",
-    x: 55,
-    y: 60,
+    lat: 6.8667,
+    lon: 81.0466,
     color: "#4CAF7D",
     icon: "🏔️",
     stats: { altitude: "1041m", trails: "12+", rating: "4.9" },
@@ -43,8 +83,8 @@ const destinations = [
     name: "Mirissa",
     tag: "Whale Watching",
     description: "Turquoise waters home to blue whales and spinner dolphins.",
-    x: 42,
-    y: 84,
+    lat: 5.9483,
+    lon: 80.4716,
     color: "#0077B6",
     icon: "🐋",
     stats: { depth: "200m", season: "Nov–Apr", rating: "4.7" },
@@ -54,8 +94,8 @@ const destinations = [
     name: "Colombo",
     tag: "The Capital",
     description: "A vibrant port city where colonial heritage meets modern skylines.",
-    x: 28,
-    y: 62,
+    lat: 6.9339,
+    lon: 79.8500,
     color: "#E76F51",
     icon: "🏙️",
     stats: { pop: "752K", founded: "1505", rating: "4.6" },
@@ -65,8 +105,8 @@ const destinations = [
     name: "Trincomalee",
     tag: "Beach Paradise",
     description: "One of the world's finest natural harbours with pristine coral reefs.",
-    x: 60,
-    y: 30,
+    lat: 8.5874,
+    lon: 81.2152,
     color: "#48CAE4",
     icon: "🏖️",
     stats: { beaches: "8+", coral: "Yes", rating: "4.8" },
@@ -76,8 +116,8 @@ const destinations = [
     name: "Yala",
     tag: "Wildlife Reserve",
     description: "Highest leopard density on Earth amid ancient ruins and wetlands.",
-    x: 65,
-    y: 76,
+    lat: 6.3730,
+    lon: 81.5150,
     color: "#8B5E3C",
     icon: "🐆",
     stats: { area: "979km²", species: "215+", rating: "4.9" },
@@ -87,26 +127,16 @@ const destinations = [
     name: "Galle",
     tag: "Colonial Fort",
     description: "A UNESCO-listed coastal fort blending Dutch history with ocean views.",
-    x: 36,
-    y: 80,
+    lat: 6.0329,
+    lon: 80.2168,
     color: "#6D597A",
     icon: "🏝️",
     stats: { founded: "1588", heritage: "UNESCO", rating: "4.8" },
-    },
+  },
 ];
 
-// ── Floating particle ─────────────────────────────────────────────────────────
-function Particle({
-  x,
-  y,
-  delay,
-  size,
-}: {
-  x: number;
-  y: number;
-  delay: number;
-  size: number;
-}) {
+// Floating particle 
+function Particle({ x, y, delay, size }: { x: number; y: number; delay: number; size: number }) {
   return (
     <div
       className="absolute rounded-full bg-teal-400/20 pointer-events-none"
@@ -122,28 +152,25 @@ function Particle({
   );
 }
 
-// ── Pin component ─────────────────────────────────────────────────────────────
+// Pin component 
 function DestinationPin({
   dest,
   isActive,
   onClick,
-}: {
-  dest: (typeof destinations)[0];
-  isActive: boolean;
-  onClick: () => void;
-}) {
+}: any) {
+  const { x, y } = latLonToXY(dest.lat, dest.lon);
+
   return (
     <button
       onClick={onClick}
       className="absolute -translate-x-1/2 -translate-y-1/2 group"
-      style={{ left: `${dest.x}%`, top: `${dest.y}%`, zIndex: isActive ? 20 : 10 }}
+      style={{ left: `${x}%`, top: `${y}%` }}
+      aria-label={`View ${dest.name}`}
     >
-      {/* Pulse ring */}
       <span
         className="absolute inset-0 rounded-full animate-ping opacity-60"
         style={{ backgroundColor: dest.color, animationDuration: "2s" }}
       />
-      {/* Pin dot */}
       <span
         className="relative flex items-center justify-center w-8 h-8 rounded-full border-2 border-white shadow-lg text-sm transition-transform duration-300 group-hover:scale-125"
         style={{
@@ -154,7 +181,6 @@ function DestinationPin({
       >
         {dest.icon}
       </span>
-      {/* Label */}
       <span
         className="absolute left-1/2 -translate-x-1/2 top-full mt-1 whitespace-nowrap text-[10px] font-bold tracking-wide bg-white/90 backdrop-blur-sm px-2 py-0.5 rounded-full shadow opacity-0 group-hover:opacity-100 transition-opacity duration-200"
         style={{ color: dest.color }}
@@ -165,15 +191,21 @@ function DestinationPin({
   );
 }
 
-// ── Info card ─────────────────────────────────────────────────────────────────
-function InfoCard({ dest, onClose }: { dest: (typeof destinations)[0]; onClose: () => void }) {
+// Info card 
+function InfoCard({
+  dest,
+  onClose,
+  onExplore,
+}: {
+  dest: (typeof destinations)[0];
+  onClose: () => void;
+  onExplore: (destinationId: number) => void;
+}) {
   const statEntries = Object.entries(dest.stats);
   return (
     <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden w-72 animate-cardIn">
-      {/* Header bar */}
       <div className="h-1.5 w-full" style={{ backgroundColor: dest.color }} />
       <div className="p-5">
-        {/* Icon + title */}
         <div className="flex items-start justify-between mb-3">
           <div>
             <span className="text-3xl">{dest.icon}</span>
@@ -188,12 +220,13 @@ function InfoCard({ dest, onClose }: { dest: (typeof destinations)[0]; onClose: 
           <button
             onClick={onClose}
             className="text-stone-400 hover:text-stone-600 transition-colors text-lg leading-none mt-1"
+            aria-label="Close"
           >
             ×
           </button>
         </div>
         <p className="text-sm text-stone-500 leading-relaxed mb-4">{dest.description}</p>
-        {/* Stats row */}
+
         <div className="grid grid-cols-3 gap-2">
           {statEntries.map(([key, val]) => (
             <div key={key} className="bg-stone-50 rounded-xl p-2 text-center">
@@ -202,9 +235,11 @@ function InfoCard({ dest, onClose }: { dest: (typeof destinations)[0]; onClose: 
             </div>
           ))}
         </div>
-        {/* CTA */}
+
+        {/* Explore button — scrolls to FlyersSection and activates the matching flyer */}
         <button
-          className="mt-4 w-full py-2.5 rounded-xl text-white text-sm font-semibold tracking-wide transition-opacity hover:opacity-90"
+          onClick={() => onExplore(dest.id)}
+          className="mt-4 w-full py-2.5 rounded-xl text-white text-sm font-semibold tracking-wide transition-all duration-200 hover:opacity-90 hover:scale-[1.02] active:scale-[0.98]"
           style={{ backgroundColor: dest.color }}
         >
           Explore {dest.name} →
@@ -214,9 +249,13 @@ function InfoCard({ dest, onClose }: { dest: (typeof destinations)[0]; onClose: 
   );
 }
 
-// ── Main section ──────────────────────────────────────────────────────────────
-export default function InteractiveMapSection() {
-  const containerRef = useRef<HTMLDivElement>(null);
+// Props 
+interface InteractiveMapSectionProps {
+  flyersSectionRef: React.RefObject<FlyersSectionHandle | null>;
+}
+
+// Main section 
+export default function InteractiveMapSection({ flyersSectionRef }: InteractiveMapSectionProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [activeId, setActiveId] = useState<number | null>(null);
@@ -257,22 +296,29 @@ export default function InteractiveMapSection() {
     setIsHoveringMap(false);
   }, []);
 
+  const handleExplore = useCallback(
+    (destinationId: number) => {
+      flyersSectionRef.current?.jumpToDestination(destinationId);
+      setActiveId(null); // close the card
+    },
+    [flyersSectionRef]
+  );
+
   const activeDestination = destinations.find((d) => d.id === activeId);
 
-  // Random particles
   const [particles, setParticles] = useState<
     { x: number; y: number; delay: number; size: number }[]
   >([]);
 
   useEffect(() => {
-    const generated = Array.from({ length: 18 }, (_, i) => ({
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      delay: i * 0.4,
-      size: 4 + Math.random() * 8,
-    }));
-
-    setParticles(generated);
+    setParticles(
+      Array.from({ length: 18 }, (_, i) => ({
+        x: Math.random() * 100,
+        y: Math.random() * 100,
+        delay: i * 0.4,
+        size: 4 + Math.random() * 8,
+      }))
+    );
   }, []);
 
   return (
@@ -310,7 +356,9 @@ export default function InteractiveMapSection() {
           {/* Shadow beneath map */}
           <div
             className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-4 w-4/5 h-16 bg-teal-900/20 blur-2xl rounded-full transition-all duration-500"
-            style={{ transform: `translateX(-50%) translateY(16px) scaleX(${isHoveringMap ? 0.85 : 1})` }}
+            style={{
+              transform: `translateX(-50%) translateY(16px) scaleX(${isHoveringMap ? 0.85 : 1})`,
+            }}
           />
 
           {/* Tilt wrapper */}
@@ -362,7 +410,7 @@ export default function InteractiveMapSection() {
               />
             </div>
 
-            {/* Floating depth layer (3D lift) */}
+            {/* Floating depth layer */}
             <div
               className="absolute -inset-3 rounded-3xl border border-teal-300/30 pointer-events-none"
               style={{ transform: "translateZ(-20px)" }}
@@ -372,10 +420,13 @@ export default function InteractiveMapSection() {
 
         {/* Right panel */}
         <div className="flex-1 flex flex-col gap-6">
-          {/* Info card or destination grid */}
           {activeDestination ? (
             <div className="animate-fadeIn">
-              <InfoCard dest={activeDestination} onClose={() => setActiveId(null)} />
+              <InfoCard
+                dest={activeDestination}
+                onClose={() => setActiveId(null)}
+                onExplore={handleExplore}
+              />
             </div>
           ) : (
             <div>
@@ -391,7 +442,10 @@ export default function InteractiveMapSection() {
                   >
                     <span
                       className="w-9 h-9 rounded-lg flex items-center justify-center text-lg shrink-0 transition-transform group-hover:scale-110"
-                      style={{ backgroundColor: `${dest.color}22`, border: `1.5px solid ${dest.color}55` }}
+                      style={{
+                        backgroundColor: `${dest.color}22`,
+                        border: `1.5px solid ${dest.color}55`,
+                      }}
                     >
                       {dest.icon}
                     </span>
@@ -415,9 +469,14 @@ export default function InteractiveMapSection() {
               { label: "Km Coastline", value: "1,340" },
               { label: "Wildlife Parks", value: "26" },
             ].map((s) => (
-              <div key={s.label} className="flex-1 bg-white/60 rounded-xl p-3 text-center border border-white/50 shadow-sm">
+              <div
+                key={s.label}
+                className="flex-1 bg-white/60 rounded-xl p-3 text-center border border-white/50 shadow-sm"
+              >
                 <div className="text-xl font-bold font-serif text-teal-700">{s.value}</div>
-                <div className="text-[10px] text-stone-400 uppercase tracking-wide mt-0.5">{s.label}</div>
+                <div className="text-[10px] text-stone-400 uppercase tracking-wide mt-0.5">
+                  {s.label}
+                </div>
               </div>
             ))}
           </div>
